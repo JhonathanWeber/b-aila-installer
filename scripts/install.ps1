@@ -111,7 +111,7 @@ else {
 Write-Host "Checking Developer Tools..."
 Write-Success "Developer tools will be handled locally via npx (Lite Mode)."
 
-# Install Ollama
+# Install Ollama & Default Model
 Write-Host "Checking Ollama..."
 if (-not (Get-Process "ollama" -ErrorAction SilentlyContinue)) {
     Write-Host "Installing Ollama via Winget..."
@@ -120,6 +120,12 @@ if (-not (Get-Process "ollama" -ErrorAction SilentlyContinue)) {
 else {
     Write-Success "Ollama is already running/installed."
 }
+
+Write-Host "Downloading Default AI Model (qwen2.5-coder:1.5b)..." -ForegroundColor Yellow
+Write-Host "This may take a few minutes depending on your connection."
+Start-Process powershell.exe -ArgumentList "-NoProfile -Wait -Command `"ollama pull qwen2.5-coder:1.5b`"" -WindowStyle Normal
+Write-Success "AI Model is ready."
+
 
 # WSL2 Check/Install
 Write-Host "Verifying WSL2 status..."
