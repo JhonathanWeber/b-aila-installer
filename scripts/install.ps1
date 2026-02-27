@@ -123,7 +123,18 @@ else {
 
 Write-Host "Downloading Default AI Model (qwen2.5-coder:1.5b)..." -ForegroundColor Yellow
 Write-Host "This may take a few minutes depending on your connection."
-Start-Process powershell.exe -ArgumentList "-NoProfile -Wait -Command `"ollama pull qwen2.5-coder:1.5b`"" -WindowStyle Normal
+
+$ollamaCmd = "ollama"
+# Find absolute path to bypass PATH caching issues on fresh installs
+$ollamaPaths = @("$env:LOCALAPPDATA\Programs\Ollama\ollama.exe", "$env:ProgramFiles\Ollama\ollama.exe")
+foreach ($p in $ollamaPaths) {
+    if (Test-Path $p) {
+        $ollamaCmd = "`"$p`""
+        break
+    }
+}
+
+Start-Process powershell.exe -ArgumentList "-NoProfile -Wait -Command `"& $ollamaCmd pull qwen2.5-coder:1.5b`"" -WindowStyle Normal
 Write-Success "AI Model is ready."
 
 
