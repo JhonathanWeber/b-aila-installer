@@ -159,13 +159,24 @@ $appsPath = Join-Path $projectRoot "apps"
 
 if (-not (Test-Path -Path $appsPath)) {
     Write-WarningMsg "Project folders (apps/) not found. Syncing from GitHub..."
-    Write-Host "Cloning repository..."
-    # Note: We clone to a temp directory to avoid conflicts if scripts already exist in root
-    $repoUrl = "https://github.com/JhonathanWeber/b-aila-core.git"
+    
+    # Repositorio corregido
+    $repoName = "JhonathanWeber/b-aila-core"
+    $repoUrl = "https://github.com/$repoName.git"
     $tempPath = Join-Path $projectRoot "temp_sync"
     
+    if (Test-Path $tempPath) { Remove-Item $tempPath -Recurse -Force }
+
     try {
-        git clone $repoUrl $tempPath
+        if (Get-Command gh -ErrorAction SilentlyContinue) {
+            Write-Host "Cloning $repoName using GitHub CLI..."
+            gh repo clone $repoName $tempPath -- --depth 1
+        }
+        else {
+            Write-Host "Cloning $repoUrl using Git..."
+            git clone --depth 1 $repoUrl $tempPath
+        }
+
         if (Test-Path -Path (Join-Path $tempPath "apps")) {
             Write-Host "Moving files to project root..."
             Get-ChildItem -Path $tempPath | ForEach-Object {
@@ -178,7 +189,7 @@ if (-not (Test-Path -Path $appsPath)) {
         }
     }
     catch {
-        Write-ErrorMsg "Failed to clone repository. Please check your internet connection."
+        Write-ErrorMsg "Failed to clone repository. Please check your internet connection or git status."
     }
     finally {
         if (Test-Path -Path $tempPath) {
