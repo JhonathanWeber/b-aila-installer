@@ -196,18 +196,6 @@ else {
 
 $backendPath = Join-Path $projectRoot "apps\backend"
 
-# --- 6. Self-Healing & Fixes ---
-$backendPkg = Join-Path $backendPath "package.json"
-if (Test-Path $backendPkg) {
-    Write-Host "Applying stability patches to package.json..."
-    $content = Get-Content $backendPkg -Raw
-    if ($content -like '*"dev": "ts-node*') {
-        $content = $content -replace '"dev": "ts-node', '"dev": "npx ts-node'
-        $content | Set-Content $backendPkg
-        Write-Success "package.json patched to use npx."
-    }
-}
-
 # --- 7. Dependency Installation (Node.js) ---
 Write-Header "Installing Node.js Dependencies"
 
@@ -216,7 +204,9 @@ function Install-Deps($path, $name) {
         $nodeModules = Join-Path $path "node_modules"
         if (-not (Test-Path -Path $nodeModules)) {
             Write-Host "Installing dependencies for $name..." -ForegroundColor Yellow
-            Start-Process powershell.exe -ArgumentList "-NoProfile -Wait -Command `"cd '$path'; npm install`"" -WindowStyle Normal
+            Push-Location $path
+            npm install
+            Pop-Location
             Write-Success "Dependencies for $name installed."
         }
         else {
