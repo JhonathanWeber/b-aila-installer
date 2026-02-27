@@ -10,7 +10,6 @@
 
 # --- Configuration ---
 $BAILA_PORT_BACKEND = 8990
-$BAILA_PORT_DASHBOARD = 8991
 $OLLAMA_PORT = 11434
 $MIN_DISK_SPACE_GB = 20
 
@@ -77,6 +76,17 @@ else {
     Write-Success "Winget found."
 }
 
+# Check Node.js
+Write-Host "Checking Node.js..."
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+    Write-WarningMsg "Node.js not found. Installing via Winget..."
+    winget install -e --id OpenJS.NodeJS
+    Write-Success "Node.js installation triggered. You may need to restart the terminal if the next steps fail."
+}
+else {
+    Write-Success "Node.js is installed."
+}
+
 # Install Ollama
 Write-Host "Checking Ollama..."
 if (-not (Get-Process "ollama" -ErrorAction SilentlyContinue)) {
@@ -103,9 +113,8 @@ else {
 Write-Header "Configuring Network"
 $firewallRules = Get-NetFirewallRule -DisplayName "B-AILA Backend" -ErrorAction SilentlyContinue
 if (-not $firewallRules) {
-    Write-Host "Adding Firewall rules for ports $BAILA_PORT_BACKEND and $BAILA_PORT_DASHBOARD..."
+    Write-Host "Adding Firewall rule for port $BAILA_PORT_BACKEND..."
     New-NetFirewallRule -DisplayName "B-AILA Backend" -Direction Inbound -LocalPort $BAILA_PORT_BACKEND -Protocol TCP -Action Allow
-    New-NetFirewallRule -DisplayName "B-AILA Dashboard" -Direction Inbound -LocalPort $BAILA_PORT_DASHBOARD -Protocol TCP -Action Allow
 }
 Write-Success "Firewall rules configured."
 
@@ -157,7 +166,6 @@ else {
 }
 
 $backendPath = Join-Path $projectRoot "apps\backend"
-$frontendPath = Join-Path $projectRoot "apps\frontend"
 
 # --- 6. Dependency Installation (Node.js) ---
 Write-Header "Installing Node.js Dependencies"
@@ -177,7 +185,6 @@ function Install-Deps($path, $name) {
 }
 
 Install-Deps $backendPath "Backend"
-Install-Deps $frontendPath "Frontend"
 
 # --- 7. Final Infrastructure Check ---
 Write-Header "Finalizing Environment"
@@ -191,18 +198,13 @@ else {
 }
 
 # --- Launch Backend ---
-Write-Host "Starting Backend Service..."
+Write-Host "Starting B-AILA Services (Integrated Dashboard)..."
 $env:OLLAMA_URL = "http://localhost:$OLLAMA_PORT"
 Start-Process powershell.exe -ArgumentList "-NoProfile -NoExit -Command `"cd '$backendPath'; `$env:OLLAMA_URL='http://localhost:$OLLAMA_PORT'; npm run dev`"" -WindowStyle Normal
 
-# --- Launch Frontend ---
-Write-Host "Starting Frontend Dashboard on port $BAILA_PORT_DASHBOARD..."
-# Note: Using -- -p to pass port to next dev
-Start-Process powershell.exe -ArgumentList "-NoProfile -NoExit -Command `"cd '$frontendPath'; npm run dev -- -p $BAILA_PORT_DASHBOARD`"" -WindowStyle Normal
-
 # --- Launch Browser ---
 Write-Host "Opening Dashboard in your default browser..."
-Start-Process "http://localhost:$BAILA_PORT_DASHBOARD"
+Start-Process "http://localhost:$BAILA_PORT_BACKEND"
 
 Write-Host "`nAll systems are launching! The Dashboard will open in your browser shortly." -ForegroundColor Cyan
 Write-Host "You can now open Blender and use the B-AILA Add-on." -ForegroundColor Green
