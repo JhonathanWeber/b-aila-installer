@@ -107,16 +107,9 @@ else {
     Write-Success "Git is installed."
 }
 
-# Check Developer Tools (ts-node)
-Write-Host "Checking Developer Tools (ts-node)..."
-if (-not (Get-Command ts-node -ErrorAction SilentlyContinue)) {
-    Write-WarningMsg "ts-node not found globally. Installing via npm..."
-    Start-Process powershell.exe -ArgumentList "-NoProfile -Wait -Command `"npm install -g ts-node typescript`"" -WindowStyle Normal
-    Write-Success "Developer tools (ts-node, typescript) installed globally."
-}
-else {
-    Write-Success "Developer tools are ready."
-}
+# Check Developer Tools
+Write-Host "Checking Developer Tools..."
+Write-Success "Developer tools will be handled locally via npx (Lite Mode)."
 
 # Install Ollama
 Write-Host "Checking Ollama..."
