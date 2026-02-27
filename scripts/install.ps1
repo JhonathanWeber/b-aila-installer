@@ -206,6 +206,18 @@ function Install-Deps($path, $name) {
             Write-Host "Installing dependencies for $name..." -ForegroundColor Yellow
             Push-Location $path
             npm install
+            
+            # Auto-setup Database for Backend
+            if ($name -eq "Backend") {
+                Write-Host "Initializing Database..." -ForegroundColor Cyan
+                $envFile = Join-Path $path ".env"
+                if (-not (Test-Path $envFile)) {
+                    "DATABASE_URL=`"file:./dev.db`"" | Out-File -FilePath $envFile -Encoding utf8
+                }
+                npx prisma generate
+                npx prisma db push
+            }
+            
             Pop-Location
             Write-Success "Dependencies for $name installed."
         }
