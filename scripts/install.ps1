@@ -76,15 +76,46 @@ else {
     Write-Success "Winget found."
 }
 
-# Check Node.js
-Write-Host "Checking Node.js..."
+# Check Node.js & npm
+Write-Host "Checking Node.js & npm..."
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
     Write-WarningMsg "Node.js not found. Installing via Winget..."
     winget install -e --id OpenJS.NodeJS
     Write-Success "Node.js installation triggered. You may need to restart the terminal if the next steps fail."
 }
 else {
-    Write-Success "Node.js is installed."
+    $nodeVer = node -v
+    Write-Success "Node.js is installed ($nodeVer)."
+}
+
+if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+    Write-WarningMsg "npm not found. It should come with Node.js. Please check your installation."
+}
+else {
+    $npmVer = npm -v
+    Write-Success "npm is installed ($npmVer)."
+}
+
+# Check Git
+Write-Host "Checking Git..."
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    Write-WarningMsg "Git not found. Installing via Winget..."
+    winget install -e --id Git.Git
+    Write-Success "Git installation triggered."
+}
+else {
+    Write-Success "Git is installed."
+}
+
+# Check Developer Tools (ts-node)
+Write-Host "Checking Developer Tools (ts-node)..."
+if (-not (Get-Command ts-node -ErrorAction SilentlyContinue)) {
+    Write-WarningMsg "ts-node not found globally. Installing via npm..."
+    Start-Process powershell.exe -ArgumentList "-NoProfile -Wait -Command `"npm install -g ts-node typescript`"" -WindowStyle Normal
+    Write-Success "Developer tools (ts-node, typescript) installed globally."
+}
+else {
+    Write-Success "Developer tools are ready."
 }
 
 # Install Ollama
@@ -127,38 +158,32 @@ $projectRoot = Split-Path -Path $PSCommandPath -Parent | Split-Path -Parent
 $appsPath = Join-Path $projectRoot "apps"
 
 if (-not (Test-Path -Path $appsPath)) {
-    Write-WarningMsg "Project folders (apps/) not found. Attempting to sync from GitHub..."
-    if (Get-Command git -ErrorAction SilentlyContinue) {
-        Write-Host "Cloning repository..."
-        # Note: We clone to a temp directory to avoid conflicts if scripts already exist in root
-        $repoUrl = "https://github.com/JhonathanWeber/b-aila-core.git"
-        $tempPath = Join-Path $projectRoot "temp_sync"
-        
-        try {
-            git clone $repoUrl $tempPath
-            if (Test-Path -Path (Join-Path $tempPath "apps")) {
-                Write-Host "Moving files to project root..."
-                Get-ChildItem -Path $tempPath | ForEach-Object {
-                    $dest = Join-Path $projectRoot $_.Name
-                    if (-not (Test-Path -Path $dest)) {
-                        Move-Item -Path $_.FullName -Destination $projectRoot -Force
-                    }
+    Write-WarningMsg "Project folders (apps/) not found. Syncing from GitHub..."
+    Write-Host "Cloning repository..."
+    # Note: We clone to a temp directory to avoid conflicts if scripts already exist in root
+    $repoUrl = "https://github.com/JhonathanWeber/b-aila-core.git"
+    $tempPath = Join-Path $projectRoot "temp_sync"
+    
+    try {
+        git clone $repoUrl $tempPath
+        if (Test-Path -Path (Join-Path $tempPath "apps")) {
+            Write-Host "Moving files to project root..."
+            Get-ChildItem -Path $tempPath | ForEach-Object {
+                $dest = Join-Path $projectRoot $_.Name
+                if (-not (Test-Path -Path $dest)) {
+                    Move-Item -Path $_.FullName -Destination $projectRoot -Force
                 }
-                Write-Success "Project source synced successfully."
             }
-        }
-        catch {
-            Write-ErrorMsg "Failed to clone repository. Please check your internet connection."
-        }
-        finally {
-            if (Test-Path -Path $tempPath) {
-                Remove-Item -Path $tempPath -Recurse -Force
-            }
+            Write-Success "Project source synced successfully."
         }
     }
-    else {
-        Write-ErrorMsg "Git not found. Please install Git or clone the repository manually: https://github.com/Jhon/b-aila.git"
-        exit
+    catch {
+        Write-ErrorMsg "Failed to clone repository. Please check your internet connection."
+    }
+    finally {
+        if (Test-Path -Path $tempPath) {
+            Remove-Item -Path $tempPath -Recurse -Force
+        }
     }
 }
 else {
